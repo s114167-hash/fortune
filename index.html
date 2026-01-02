@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>日式運勢占卜</title>
+
+<style>
+  body {
+    font-family: "Noto Serif TC", "Hiragino Mincho Pro", "MS Mincho", serif;
+    background: linear-gradient(#f8f4ee, #e9dfcf);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+  }
+
+  #app {
+    text-align: center;
+  }
+
+  /* 標題 */
+  .title-main {
+    font-size: 28px;
+    letter-spacing: 6px;
+    margin: 0;
+    color: #3f2a1a;
+  }
+  .title-sub {
+    font-size: 14px;
+    margin-top: 4px;
+    color: #6b4a2f;
+    letter-spacing: 2px;
+  }
+
+  /* 按鈕 */
+  button {
+    margin-top: 18px;
+    padding: 10px 28px 12px;
+    border: none;
+    border-radius: 999px;
+    background-color: #7b2d26;
+    color: #fff;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  button:hover {
+    background-color: #5f231e;
+  }
+  .btn-main { font-size: 16px; }
+  .btn-sub  { font-size: 11px; opacity: 0.85; }
+
+  /* 籤筒晃動動畫 */
+  .shake {
+    animation: shake 0.6s;
+  }
+  @keyframes shake {
+    0% { transform: rotate(0); }
+    20% { transform: rotate(2deg); }
+    40% { transform: rotate(-2deg); }
+    60% { transform: rotate(1deg); }
+    80% { transform: rotate(-1deg); }
+    100% { transform: rotate(0); }
+  }
+
+  /* 籤動畫 */
+  .omikuji {
+    transform: translateY(120px);
+    opacity: 0;
+    transition: transform 0.6s cubic-bezier(.34,1.56,.64,1), opacity 0.4s;
+  }
+  .omikuji.show {
+    transform: translateY(0);
+    opacity: 1;
+  }
+
+  /* 籤文字 */
+  .fortune {
+    font-size: 22px;
+    writing-mode: vertical-rl;
+    text-anchor: middle;
+    fill: #4a2b16;
+    font-weight: bold;
+    letter-spacing: 4px;
+  }
+
+  /* 朱印 */
+  .seal-text {
+    font-size: 14px;
+    fill: #7b1e1e;
+    writing-mode: vertical-rl;
+    text-anchor: middle;
+    letter-spacing: 2px;
+  }
+
+  /* 祝福文字 */
+  .blessing {
+    margin-top: 12px;
+    font-size: 15px;
+    color: #4a3a2a;
+    min-height: 1.5em;
+  }
+
+  /* 附註 */
+  .disclaimer {
+    position: fixed;
+    bottom: 8px;
+    right: 10px;
+    font-size: 12px;
+    color: #7a6a58;
+    opacity: 0.75;
+    user-select: none;
+  }
+</style>
+</head>
+
+<body>
+<div id="app">
+
+  <!-- 標題 -->
+  <div style="margin-bottom: 12px;">
+    <div class="title-main">今日運勢</div>
+    <div class="title-sub">今日の運勢</div>
+  </div>
+
+  <svg width="300" height="360" viewBox="0 0 300 360">
+
+    <!-- 籤 -->
+    <g id="omikuji" class="omikuji">
+      <rect x="130" y="40" width="40" height="200" rx="4"
+            fill="#fffaf0" stroke="#cdbb9b"/>
+      <text id="fortuneText" x="150" y="120" class="fortune">？</text>
+
+      <!-- 朱印 -->
+      <g transform="translate(150 200) rotate(-12)">
+        <circle r="26" fill="none" stroke="#c62828" stroke-width="3" opacity="0.6"/>
+        <circle r="22" fill="none" stroke="#c62828" stroke-width="1.5" opacity="0.4"/>
+        <text y="-6" class="seal-text">朱印</text>
+        <text y="10" class="seal-text">神社</text>
+      </g>
+    </g>
+
+    <!-- 籤筒（可晃動） -->
+    <g id="tube">
+      <polygon points="90,200 130,170 170,170 210,200 170,230 130,230"
+               fill="#9c6233"/>
+      <polygon points="90,260 130,290 170,290 210,260 170,230 130,230"
+               fill="#7f4f28"/>
+      <rect x="90" y="200" width="120" height="60" fill="#8b572a"/>
+      <polygon points="90,200 130,170 170,170 210,200" fill="#b07a45"/>
+    </g>
+  </svg>
+
+  <!-- 祝福文字 -->
+  <div id="blessing" class="blessing"></div>
+
+  <!-- 按鈕 -->
+  <button onclick="drawOmikuji()">
+    <div class="btn-main">抽籤</div>
+    <div class="btn-sub">おみくじを引く</div>
+  </button>
+</div>
+
+<div class="disclaimer">
+  抽籤占卜僅供娛樂，無關現實不擾生活
+</div>
+
+<script>
+  const fortunes = {
+    "大吉": "今天適合把握機會，保持感恩的心前行。",
+    "吉":   "穩定的一天，踏實行動會帶來安心。",
+    "小吉": "小小的好事值得珍惜，慢慢累積。",
+    "平":   "平凡即是福，照著自己的步調生活。",
+    "兇":   "放慢腳步，多照顧自己，事情會轉好。"
+  };
+
+  const fortuneText = document.getElementById("fortuneText");
+  const blessingEl  = document.getElementById("blessing");
+  const omikuji = document.getElementById("omikuji");
+  const tube = document.getElementById("tube");
+
+  function drawOmikuji() {
+    // 重置
+    omikuji.classList.remove("show");
+    tube.classList.remove("shake");
+    blessingEl.textContent = "";
+
+    // 籤筒晃動
+    tube.classList.add("shake");
+
+    setTimeout(() => {
+      const keys = Object.keys(fortunes);
+      const result = keys[Math.floor(Math.random() * keys.length)];
+
+      fortuneText.textContent = result;
+      blessingEl.textContent = fortunes[result];
+      omikuji.classList.add("show");
+    }, 500);
+  }
+</script>
+</body>
+</html>
